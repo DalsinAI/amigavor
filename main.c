@@ -90,6 +90,10 @@ float screendx = BARRIER_SPEED, screendy = 0.0;
 float dist_ahead;
 
 // all movement is based on t_frame.
+#ifdef __amigaos__
+/* "start" is libnix's startup code's own symbol */
+#define start vor_start
+#endif
 unsigned long frames, start, end;
 float t_frame;  // length of this frame (in ticks = 1/20th second)  adjusted for gamespeed
 int ms_frame;   // length of this frame (milliseconds)
