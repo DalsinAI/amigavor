@@ -1,0 +1,89 @@
+# VoR 0.5.8 for AmigaOS 3.x, 68040/68060 + FPU, on
+# OpenGPU's SDL 1.2 (sdl12-compat).
+#
+#   make -f amiga/Makefile.amigaos -j2 dist \
+#        STOVE=/path/to/openamigagcc-16.2.0-open4 \
+#        NDK=/path/to/OpenNDK/Include_H SDLKIT=/path/to/opengpu-sdk
+#
+# Makefile.in's vor (with the prebuilt data/font.png), amiga/config.h for
+# configure's, its data at PROGDIR:data. SDLKIT is the OpenGPU developer kit:
+# libSDL.a, sdl12-compat on SDL2.module. It has no SDL_image or SDL_mixer
+# 1.2: the Team's amiga/sdl_image_lite.c (PNG on libpng) and
+# amiga/sdl_mixer_lite.c (WAV, with libmikmod 3.3.16 for the music:
+# amiga/libmikmod, its player, XM loader and no-sound driver) stand in.
+# DEPS has the Team's static libpng, libjpeg and zlib
+# (/mnt/amigachrome/team2/deps/m68k-amigaos).
+
+STOVE   ?= $(HOME)/CradleLab/toolchain/openamigagcc-16.2.0-open4-x86_64-linux
+NDK     ?= $(HOME)/CradleLab/gfopensdk/OpenNDK/Include_H
+SDLKIT  ?= /mnt/amigachrome/team2/deps/opengpu-sdk
+DEPS    ?= /mnt/amigachrome/team2/deps/m68k-amigaos
+CC      = $(STOVE)/bin/m68k-amigaos-gcc
+STRIP   = $(STOVE)/bin/m68k-amigaos-strip
+CPU     ?= -m68040 -m68881
+# -fno-tree-loop-distribute-patterns: GCC 16's loop miscompile (the kit's
+# sdl2-config gives it for GCC 16 too).
+OPT     ?= -O2 -fomit-frame-pointer -fno-tree-loop-distribute-patterns
+
+BUILD   = build/amigaos
+OBJDIR  = $(BUILD)/obj
+PROG    = VoR
+OUT     = dist/VoR
+
+DEFS    = -D__amigaos__ -DNDEBUG -DHAVE_CONFIG_H -DDATA_PREFIX=\"PROGDIR:data\"
+INC     = -Iamiga -I. -Iamiga/include -Iamiga/include/SDL -I$(SDLKIT)/include/SDL -I$(SDLKIT)/include
+CFLAGS  = -noixemul $(OPT) $(CPU) -fno-common -MMD -MP -w
+LDFLAGS = -noixemul $(CPU) -Wl,--wrap=getenv
+LIBS    = -L$(SDLKIT)/lib -L$(DEPS)/lib -lpng -ljpeg -lz -lSDL -lpthread -lm
+
+SRC     = font.c args.c dust.c file.c mt.c rocks.c score.c sprite.c sound.c autopilot.c main.c
+CSRC    = amiga/stack.c amiga/amiga_env.c amiga/sdl_image_lite.c amiga/sdl_mixer_lite.c
+MIKMOD_SRC = $(wildcard amiga/libmikmod/*.c)
+MIKMOD_CFLAGS = -noixemul -O2 $(CPU) -fno-common -MMD -MP -std=gnu99 -w -DMIKMOD_BUILD \
+          -DMIKMOD_STATIC -DHAVE_LIMITS_H -DHAVE_SNPRINTF -DHAVE_UNISTD_H -DWORDS_BIGENDIAN=1 \
+          -DNO_DEPACKERS -DNO_HQMIXER -Iamiga/libmikmod -I$(NDK)
+
+OBJS    = $(SRC:%.c=$(OBJDIR)/%.o) $(CSRC:%.c=$(OBJDIR)/%.o) $(MIKMOD_SRC:%.c=$(OBJDIR)/%.o)
+ICONS   = $(wildcard amiga/icons/*.info)
+
+all: $(BUILD)/$(PROG)
+
+$(BUILD)/$(PROG): $(OBJS)
+	$(CC) $(LDFLAGS) -o $@.debug $(OBJS) $(LIBS)
+	$(STRIP) -o $@ $@.debug
+
+$(OBJDIR)/amiga/libmikmod/%.o: amiga/libmikmod/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(MIKMOD_CFLAGS) -c -o $@ $<
+
+$(OBJDIR)/amiga/%.o: amiga/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -std=gnu99 -Iamiga/include/SDL -Iamiga/libmikmod -I$(SDLKIT)/include/SDL \
+	  -I$(DEPS)/include -I$(NDK) -DMIKMOD_STATIC -Wall -c -o $@ $<
+
+$(OBJDIR)/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -std=gnu99 $(DEFS) $(INC) -c -o $@ $<
+
+# The drawer: the program; data/ with the game's pictures, sound and music;
+# ReadMe, upstream's README and the licence. The high scores are kept in
+# the drawer's user/.vor-scores.
+dist: $(BUILD)/$(PROG) $(ICONS) AMIGA_PORT.md
+	rm -rf $(OUT) && mkdir -p $(OUT)/data
+	cp $(BUILD)/$(PROG) $(OUT)/
+	cp data/*.png data/*.wav data/*.xm $(OUT)/data/
+	cp AMIGA_PORT.md $(OUT)/ReadMe
+	cp README.md $(OUT)/ReadMe-upstream
+	cp COPYING $(OUT)/COPYING.txt
+	cp amiga/libmikmod/COPYING.LIB $(OUT)/COPYING-libmikmod.txt
+	cp amiga/icons/VoR.info amiga/icons/ReadMe.info $(OUT)/
+	for f in ReadMe-upstream COPYING.txt COPYING-libmikmod.txt; do cp amiga/icons/ReadMe.info $(OUT)/$$f.info; done
+	cp amiga/icons/Folder.info $(OUT)/data.info
+	cp amiga/icons/VoR-drawer.info dist/VoR.info
+
+-include $(OBJS:.o=.d)
+
+clean:
+	rm -rf $(BUILD)
+
+.PHONY: all clean dist
