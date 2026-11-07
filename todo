@@ -1,0 +1,26 @@
+***	Move game logic into a script so we can have "variations".
+*	Then an in-game menu to choose which game:
+		Rock Dodger
+		Free-form/Practice
+		Crazy Taxi
+*	Add networking for multiplayer games:
+		Tag
+		Deathmatch
+
+**	Switch all ray-traced graphics (only big green messages left)
+*	Then we can run at the native screen size
+
+*	fix rock generation code so they are never created overlapping
+
+*	Deltas on high score display?
+
+
+Comments from HappyPenguin (and solution ideas by Josh)
+
+**	Why can't you go left?  Blast wave.  Fire/explosion graphics?
+
+DONE 2006-03-25
+***	Too hard.  Add easy setting (press 'e' to start easy game).
+**	What do you do at game over?  Need an explanatory message.
+DONE 2006-03-24
+**	Multiple deaths is a problem: sqrt(ship speed).

@@ -1,0 +1,174 @@
+#   Variations on Rockdodger
+#   Copyright (C) 2004  Joshua Grams <josh@qualdan.com>
+
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+
+SHELL = /bin/sh
+VPATH = @srcdir@
+
+srcdir = @srcdir@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+datarootdir = @datarootdir@
+datadir = @datadir@
+pkgdatadir = $(datadir)/@PACKAGE_TARNAME@
+bindir = @bindir@
+
+CC = @CC@
+CPPFLAGS = @CPPFLAGS@
+CFLAGS = $(CPPFLAGS) @CFLAGS@
+LDFLAGS = @LDFLAGS@
+LIBS = @LIBS@
+INSTALL = @INSTALL@
+
+
+exe_name = @PACKAGE_TARNAME@@EXEEXT@
+
+
+
+paths := -DDATA_PREFIX=\"$(pkgdatadir)\"
+SDL_CFLAGS := @SDL_CFLAGS@ @SDL_MIXER_CFLAGS@ @SDL_IMAGE_CFLAGS@
+SDL_LIBS := @SDL_LIBS@ @SDL_MIXER_LIBS@ @SDL_IMAGE_LIBS@
+
+ldflags := $(SDL_LIBS) $(LDFLAGS) -lm
+cflags := -I. $(SDL_CFLAGS) $(paths) $(CFLAGS)
+
+my_objects := args.@OBJEXT@ dust.@OBJEXT@ file.@OBJEXT@ mt.@OBJEXT@ rocks.@OBJEXT@ score.@OBJEXT@ sprite.@OBJEXT@ sound.@OBJEXT@ autopilot.@OBJEXT@
+my_objects += main.@OBJEXT@
+libs := font.@OBJEXT@
+objects := $(libs) $(my_objects)
+
+rocks := 00 01 02 03 04 05 06 07 08 09
+rocks += 10 11 12 13 14 15 16 17 18 19
+rocks += 20 21 22 23 24 25 26 27 28 29
+rocks += 30 31 32 33 34 35 36 37 38 39
+rocks += 40 41 42 43 44 45 46 47 48 49
+rocks := $(rocks:%=data/rock%.png)
+graphics := data/ship.png data/icon.png data/life.png data/font.png $(rocks)
+
+INSTALL := install
+INSTALL_PROGRAM := $(INSTALL)
+INSTALL_DATA := $(INSTALL) -m 644
+
+
+.PHONY: all clean maintainer-clean install uninstall
+.PHONY: mkinstalldirs rminstalldirs
+.PHONY: program program-clean install-program uninstall-program
+.PHONY: data data-clean install-data uninstall-data
+.PHONY: build-dir-data-link
+
+.INTERMEDIATE: font_guts font_guts.pov
+
+all: program data
+
+data: $(graphics) build-dir-data-link
+
+# symbolic link to data dir so you can run the game from the build dir:
+build-dir-data-link:
+	test -e data || ln -s $(srcdir)/data
+
+program: $(exe_name) @PACKAGE_TARNAME@.desktop
+
+%.@OBJEXT@: %.c
+	$(CC) $(cflags) -c -o $@ $<
+
+$(my_objects): vorconfig.h
+
+font.@OBJEXT@: font.h
+
+args.@OBJEXT@: args.h config.h
+
+dust.@OBJEXT@: globals.h dust.h float.h mt.h
+
+file.@OBJEXT@: file.h common.h
+
+main.@OBJEXT@: args.h common.h config.h dust.h file.h float.h globals.h mt.h rocks.h score.h sprite.h sound.h autopilot.h
+
+mt.@OBJEXT@: mt.h
+
+rocks.@OBJEXT@: rocks.h common.h file.h globals.h mt.h sprite.h
+
+score.@OBJEXT@: score.h common.h file.h
+
+sound.@OBJEXT@: sound.h args.h common.h
+
+sprite.@OBJEXT@: sprite.h common.h
+
+@PACKAGE_TARNAME@.desktop: @PACKAGE_TARNAME@.desktop.in
+	sed -e "s|EXE_NAME|$(exe_name)|g" -e "s|DISPLAY_NAME|@PACKAGE_NAME@|g" -e "s|ICON_PATH|$(pkgdatadir)|g" $< > $@ || sh -c "rm $@; false"
+
+$(exe_name): $(objects)
+	$(CC) $^ $(ldflags) -o $@
+
+include $(srcdir)/gfx.mk
+
+tags: *.c *.h
+	exuberant-ctags *.c *.h /usr/include/SDL/*
+
+clean: program-clean
+	rm -f tags
+
+distclean: clean
+	rm -f Makefile config.h config.log config.status
+
+maintainer-clean: distclean
+	@echo 'This command is intended for maintainers to use; it'
+	@echo 'deletes files that may need special tools to rebuild.'
+	rm -f $(graphics) font_guts font_guts.pov
+
+program-clean:
+	rm -f *.@OBJEXT@ $(exe_name) @PACKAGE_TARNAME@.desktop
+
+mkinstalldirs:
+	if [ ! -d $(DESTDIR)$(pkgdatadir) ]; then mkdir -p $(DESTDIR)$(pkgdatadir); fi
+	if [ ! -d $(DESTDIR)$(bindir) ]; then mkdir -p $(DESTDIR)$(bindir); fi
+
+rminstalldirs: uninstall-data
+	if [ -d $(DESTDIR)$(pkgdatadir) ]; then rmdir $(DESTDIR)$(pkgdatadir); fi
+
+
+install-desktop-file-note: @PACKAGE_TARNAME@.desktop install-files
+	@echo
+	@echo "If you've installed system wide, you may want to run: make install-desktop-file"
+	@echo '(as root) to install a menu entry for @PACKAGE_NAME@'
+
+install-desktop-file: @PACKAGE_TARNAME@.desktop
+	desktop-file-install @PACKAGE_TARNAME@.desktop
+
+install-files: all mkinstalldirs install-program install-data
+
+install: install-files install-desktop-file-note
+
+install-program: program
+	$(INSTALL_PROGRAM) ./$(exe_name) $(DESTDIR)$(bindir)/
+
+install-data: data mkinstalldirs
+	$(INSTALL_DATA) $(srcdir)/data/*.png $(DESTDIR)$(pkgdatadir)/
+	$(INSTALL_DATA) $(srcdir)/data/*.wav $(DESTDIR)$(pkgdatadir)/
+	$(INSTALL_DATA) $(srcdir)/data/*.xm $(DESTDIR)$(pkgdatadir)/
+	@echo
+	@echo "$(pkgdatadir)/icon.png (48x48) or ship.png (32x32) make good icons."
+	@echo
+
+uninstall: uninstall-program uninstall-data rminstalldirs
+
+uninstall-program:
+	rm -f $(DESTDIR)$(bindir)/$(exe_name)
+
+uninstall-data:
+	rm -f $(DESTDIR)$(pkgdatadir)/*.png
+	rm -f $(DESTDIR)$(pkgdatadir)/*.wav
+	rm -f $(DESTDIR)$(pkgdatadir)/*.xm

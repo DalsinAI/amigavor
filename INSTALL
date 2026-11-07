@@ -1,0 +1,106 @@
+Installation Instructions
+=========================
+
+Requirements
+------------
+
+vor requires the following libraries to build/run:
+
+*	sdl           http://www.libsdl.org/download-1.2.php
+*	sdl_mixer     http://www.libsdl.org/projects/SDL_mixer/
+*	sdl_image     http://www.libsdl.org/projects/SDL_image/
+
+If you are building from git, (or editing the graphics) you will also
+need:
+
+	autoconf      version 2.63 or greater
+
+You'll also need the graphics (`data` subdir) from the tarbal, or the following
+packages to render the graphics:
+
+	povray        http://www.povray.org/
+	povray-includes  (if your distribution ships this in a separate package)
+	netpbm        http://netpbm.sourceforge.net/
+
+
+Building From A Release Tarball
+-------------------------------
+
+(See Building From Git below if you don't have a release tarball)
+
+change to the source directory and run this:
+
+./configure && make
+
+Unless there are errors, you should be able to run the game from the
+source directory like this:
+
+./vor
+
+
+Building From Git
+-----------------
+
+1.	Make sure you have the extra dependencies first. If you want to avoid
+	installing povray and/or netpbm, you can simply copy the data/ directory
+	from a recent release.
+
+2.	Run ``autoreconf``
+
+3.	Continue as normal with the Building From A Release Tarball section above.
+
+
+Building For Windows
+--------------------
+
+These instructions should work on most any modern GNU/Linux system, and maybe
+other Unix-like systems.
+
+1.	Download MXE (and install its dependencies) by following just step 1 of
+	this tutorial:
+
+	http://mxe.cc/#tutorial
+	
+2.	`cd` into the `mxe` directory
+
+3.	Run this: (takes some patience)
+
+		make gcc
+
+4.	Run this:
+
+		make sdl-image sdl-mixer
+	
+5.	Set up your environment for cross-compiling:
+
+		export PATH="/PATH/TO/YOUR/MXE/DIR/usr/bin:$PATH"
+
+6.	`cd` to vor source directory.
+
+7.	Build VoR with this command:
+
+		./configure --host=i686-pc-mingw32 && make
+
+
+Running
+-------
+
+	You can run VoR from the source directory without installing it:
+
+		./vor
+
+	add `-h` to see commandline arguments.
+
+	See `README` file for keys, etc.
+
+
+Installing
+----------
+
+	You can run `make install` to install vor. If you're installing
+	system-wide (for example, to the default install location of `/usr/local`)
+	you'll need to run this as root.
+
+	You can specify an alternative install location with the `--prefix=`
+	argument to `./configure`. See the output of: `./configure --help` for more
+	information.
