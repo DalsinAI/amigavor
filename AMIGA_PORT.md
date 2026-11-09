@@ -77,4 +77,4 @@ mt.c: BSD-3-clause (Makoto Matsumoto, Takuji Nishimura). libmikmod: LGPL 2
 or later (COPYING-libmikmod.txt). The Amiga files (amiga/): the AmiCradle
 Team, GPL 2 or later, except the mixer, which comes from the Team's Wizznic
 port and is GPL 3 or later, so the program as built here is GPL 3 or
-later; the icon is upstream's data/icon.png.
+later; the icons are our own GlowIcons (amiga/icons/art/vor.svg).
