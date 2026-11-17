@@ -1,0 +1,19 @@
+{
+  "name": "Variations on Rockdodger",
+  "version": "0.5.8-amigaos3",
+  "drawer": "VoR",
+  "program": "VoR",
+  "cpu": "68040",
+  "fpu": true,
+  "space": 2000000,
+  "modules": [
+    "SDL2.module"
+  ],
+  "keep": [
+    "user",
+    "Screenshots"
+  ],
+  "parent": "Work:Games",
+  "badge": "../amiga/icons/art/vor.png",
+  "script": "Install-VoR"
+}
